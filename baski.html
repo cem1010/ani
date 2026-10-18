@@ -2,104 +2,118 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikon.svg">
 <title>Anı Baskı</title>
 <style>
-  :root { --bg:#111; --kart:#1c1c1e; --yazi:#f2f2f2; --soluk:#9a9a9f; --vurgu:#ffb020; --iyi:#3ecf6e; --kotu:#ff5a5a; }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { margin:0; background:var(--bg); color:var(--yazi); font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif; padding:12px 12px 90px; }
-  h1 { font-size:20px; margin:4px 0 12px; display:flex; align-items:center; gap:8px; }
-  .kart { background:var(--kart); border-radius:14px; padding:12px; margin-bottom:12px; }
-  .satir { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  button { font:inherit; border:0; border-radius:12px; padding:14px 16px; background:#2c2c2e; color:var(--yazi); font-weight:600; }
-  button.ana { background:var(--vurgu); color:#111; flex:1; font-size:18px; }
-  button.genis { width:100%; }
-  button:disabled { opacity:.45; }
-  .nokta { width:10px; height:10px; border-radius:50%; background:var(--kotu); display:inline-block; }
+  :root { --bg:#000; --kart:#1c1c1e; --yazi:#f2f2f2; --soluk:#9a9a9f; --vurgu:#ffb020; --iyi:#3ecf6e; --kotu:#ff5a5a; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--yazi); font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif; overscroll-behavior:none; }
+  button { font:inherit; border:0; border-radius:12px; padding:12px 14px; background:#2c2c2e; color:var(--yazi); font-weight:600; }
+  [hidden] { display:none !important; }
+
+  /* ---- kamera ekranı ---- */
+  #kamera { position:fixed; inset:0; display:flex; flex-direction:column; }
+  #ust { display:flex; align-items:center; gap:8px; padding:calc(10px + env(safe-area-inset-top)) 12px 8px; }
+  #yaziciCip { display:flex; align-items:center; gap:8px; background:#1c1c1e; padding:8px 12px; border-radius:20px; font-size:14px; }
+  .nokta { width:10px; height:10px; border-radius:50%; background:var(--kotu); }
   .nokta.on { background:var(--iyi); }
-  #onizleme { width:100%; max-width:384px; display:block; margin:0 auto; background:#fff; image-rendering:pixelated; border-radius:4px; }
-  label { display:block; font-size:14px; color:var(--soluk); margin-top:8px; }
+  .bosluk { flex:1; }
+  .cip { background:#1c1c1e; padding:8px 12px; border-radius:20px; font-size:14px; }
+  .cip.acik { background:var(--vurgu); color:#111; }
+  #vizor { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+  #canli { max-width:100%; max-height:100%; background:#fff; image-rendering:pixelated; }
+  #flas { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; transition:opacity .25s; }
+  #flas.on { opacity:.85; transition:none; }
+  #durumYazi { position:absolute; bottom:12px; left:0; right:0; text-align:center; font-weight:600; text-shadow:0 1px 4px #000; }
+  #alt { display:flex; align-items:center; justify-content:space-around; padding:14px 20px calc(22px + env(safe-area-inset-bottom)); }
+  #deklansor { width:84px; height:84px; border-radius:50%; background:#fff; border:6px solid #555; padding:0; }
+  #deklansor:active { transform:scale(.94); }
+  #deklansor.calisiyor { background:var(--vurgu); }
+  .yuvarlak { width:54px; height:54px; border-radius:50%; font-size:22px; padding:0; }
+  #ilerleme { position:absolute; left:0; top:0; height:4px; background:var(--vurgu); width:0; transition:width .2s; }
+
+  /* ---- ayarlar ---- */
+  #panel { position:fixed; inset:0; overflow:auto; background:#111; padding:calc(12px + env(safe-area-inset-top)) 12px 40px; }
+  .kart { background:var(--kart); border-radius:14px; padding:12px; margin-bottom:12px; }
+  label { display:block; font-size:14px; color:var(--soluk); margin-top:10px; }
   input[type=range] { width:100%; }
-  input[type=text] { width:100%; font:inherit; padding:10px; border-radius:10px; border:1px solid #333; background:#111; color:var(--yazi); }
+  input[type=text] { width:100%; font:inherit; padding:10px; border-radius:10px; border:1px solid #333; background:#111; color:var(--yazi); user-select:text; }
   select { font:inherit; padding:8px; border-radius:10px; background:#111; color:var(--yazi); border:1px solid #333; }
   .seg { display:flex; gap:6px; margin-top:6px; }
   .seg button { flex:1; padding:10px 6px; font-size:14px; }
   .seg button.sec { background:var(--vurgu); color:#111; }
-  #mesaj { position:fixed; left:12px; right:12px; bottom:12px; background:#2c2c2e; padding:12px 14px; border-radius:12px; display:none; z-index:9; }
-  #mesaj.goster { display:block; }
+  .genis { width:100%; }
   .kucuk { font-size:13px; color:var(--soluk); }
-  progress { width:100%; height:8px; }
-  details summary { cursor:pointer; color:var(--soluk); }
-  #kuyruk { font-size:13px; color:var(--soluk); }
+  h2 { font-size:18px; margin:4px 0 12px; display:flex; align-items:center; gap:10px; }
+  #mesaj { position:fixed; left:12px; right:12px; top:calc(64px + env(safe-area-inset-top)); background:#2c2c2e; padding:12px 14px; border-radius:12px; display:none; z-index:9; text-align:center; }
+  #mesaj.goster { display:block; }
 </style>
 </head>
 <body>
-<h1><span id="bagNokta" class="nokta"></span> Anı Baskı <span id="bagAd" class="kucuk"></span></h1>
 
-<div class="kart">
-  <div class="satir">
-    <button id="bBagla" class="genis">Yazıcıya bağlan</button>
+<section id="kamera">
+  <div id="ilerleme"></div>
+  <div id="ust">
+    <div id="yaziciCip"><span id="bagNokta" class="nokta"></span><span id="bagAd">Yazıcı yok</span></div>
+    <div class="bosluk"></div>
+    <button id="qrCip" class="cip">QR</button>
+    <button id="ayarAc" class="cip">⚙</button>
   </div>
-  <div id="ydurum" class="kucuk" style="margin-top:6px"></div>
-</div>
-
-<div class="kart">
-  <div class="satir">
-    <button id="bCek" class="ana">📷 Fotoğraf çek</button>
-    <button id="bGaleri" title="Galeriden seç">🖼️</button>
+  <div id="vizor">
+    <canvas id="canli"></canvas>
+    <video id="video" playsinline muted autoplay hidden></video>
+    <div id="flas"></div>
+    <div id="durumYazi"></div>
   </div>
-  <input id="dosyaKamera" type="file" accept="image/*" capture="environment" hidden>
+  <div id="alt">
+    <button id="bGaleri" class="yuvarlak" title="Galeriden bas">🖼️</button>
+    <button id="deklansor" aria-label="Çek ve bas"></button>
+    <button id="bCevir" class="yuvarlak" title="Kamerayı çevir">🔄</button>
+  </div>
   <input id="dosyaGaleri" type="file" accept="image/*" hidden>
-</div>
+</section>
 
-<div class="kart" id="duzenKart" hidden>
-  <canvas id="onizleme"></canvas>
-  <div class="seg" id="oranSeg">
-    <button data-oran="1">Kare</button><button data-oran="1.333" class="sec">Dikey</button><button data-oran="0.75">Yatay</button><button data-oran="0">Tam</button>
+<section id="panel" hidden>
+  <h2><button id="ayarKapat">←</button> Ayarlar</h2>
+  <div class="kart">
+    <div class="kucuk" id="ydurum"></div>
+    <div class="seg"><button id="bBagla">Yazıcıyı yeniden ara</button><button id="bTest">Test baskısı</button></div>
   </div>
-  <label>Parlaklık <span id="vParlak"></span></label>
-  <input id="rParlak" type="range" min="-0.4" max="0.4" step="0.02" value="0.06">
-  <label>Kontrast <span id="vKontrast"></span></label>
-  <input id="rKontrast" type="range" min="0.6" max="2" step="0.05" value="1.2">
-  <label>Kaydır (kırpma yeri) </label>
-  <input id="rKaydir" type="range" min="0" max="1" step="0.01" value="0.5">
-  <div class="seg" id="yontemSeg">
-    <button data-y="atkinson" class="sec">Yumuşak</button><button data-y="floyd">Detaylı</button><button data-y="esik">Siyah-beyaz</button>
+  <div class="kart">
+    <label>Fotoğraf oranı</label>
+    <div class="seg" id="oranSeg">
+      <button data-oran="0.75">Yatay (kısa)</button><button data-oran="1">Kare</button><button data-oran="1.333">Dikey</button>
+    </div>
+    <label>Parlaklık <span id="vParlak"></span></label>
+    <input id="rParlak" type="range" min="-0.4" max="0.4" step="0.02">
+    <label>Kontrast <span id="vKontrast"></span></label>
+    <input id="rKontrast" type="range" min="0.6" max="2" step="0.05">
+    <label>Görünüm</label>
+    <div class="seg" id="yontemSeg">
+      <button data-y="atkinson">Yumuşak</button><button data-y="floyd">Detaylı</button><button data-y="esik">Siyah-beyaz</button>
+    </div>
   </div>
-  <label><input type="checkbox" id="cQr" checked> Alta QR + yazı ekle</label>
-  <div class="satir" style="margin-top:10px">
-    <button id="bBas" class="ana">🖨️ Bas</button>
-    <button id="bDondur" title="Döndür">⟳</button>
+  <div class="kart">
+    <label>Baskı koyuluğu <span id="vEnerji"></span></label>
+    <input id="rEnerji" type="range" min="8000" max="60000" step="1000">
+    <label>Hız</label>
+    <select id="aHiz"><option value="32">Normal (net)</option><option value="16">Hızlı</option><option value="48">Yavaş (en koyu)</option></select>
   </div>
-  <progress id="ilerleme" value="0" max="1" hidden></progress>
-</div>
-
-<div class="kart">
-  <div id="kuyruk">Yükleme kuyruğu boş.</div>
-</div>
-
-<div class="kart">
-  <button id="bTest" class="genis">Test baskısı (yazı + QR)</button>
-</div>
-
-<details class="kart">
-  <summary>Ayarlar</summary>
-  <label>Instagram kullanıcı adı (fotoğraf sayfasında görünür)</label>
-  <input id="aIg" type="text" placeholder="ornek_kullanici">
-  <label>QR yanındaki yazı (1. satır)</label>
-  <input id="aYazi1" type="text">
-  <label>QR yanındaki yazı (2. satır)</label>
-  <input id="aYazi2" type="text">
-  <label>Baskı koyuluğu <span id="vEnerji"></span></label>
-  <input id="rEnerji" type="range" min="8000" max="60000" step="1000" value="24000">
-  <label>Hız</label>
-  <select id="aHiz"><option value="32">Normal (net)</option><option value="16">Hızlı</option><option value="48">Yavaş (en koyu)</option></select>
+  <div class="kart">
+    <label>QR açıkken: fotoğraf sayfasında Instagram kullanıcı adı</label>
+    <input id="aIg" type="text" placeholder="ornek_kullanici">
+    <label>QR yanındaki yazı (1. satır)</label>
+    <input id="aYazi1" type="text">
+    <label>QR yanındaki yazı (2. satır)</label>
+    <input id="aYazi2" type="text">
+    <p class="kucuk" id="kuyruk"></p>
+  </div>
   <p class="kucuk" id="surum"></p>
-</details>
+</section>
 
 <div id="mesaj"></div>
 
@@ -113,149 +127,179 @@ const W = YAZICI.GENISLIK;
 const yazici = new YAZICI.Yazici();
 const ayar = Object.assign({
   ig: '', yazi1: 'Bu anın dijital hali', yazi2: 'QR\'ı okut, indir', enerji: 24000, hiz: 32,
+  oran: 1.333, parlak: 0.06, kontrast: 1.2, yontem: 'atkinson', qr: false, arka: true,
 }, JSON.parse(localStorage.getItem('ayar') || '{}'));
 const ayarKaydet = () => localStorage.setItem('ayar', JSON.stringify(ayar));
 
-function mesaj(t, ms = 3500) {
+function mesaj(t, ms = 3000) {
   const m = $('mesaj'); m.textContent = t; m.classList.add('goster');
   clearTimeout(mesaj.z); if (ms) mesaj.z = setTimeout(() => m.classList.remove('goster'), ms);
 }
+const durumYaz = (t) => { $('durumYazi').textContent = t || ''; };
 
-// ---- kurulum: #kur=<yükleme anahtarı> (adb ile bir kez açılır, sonra adres temizlenir)
+// ---- kurulum: #kur=<yükleme anahtarı>
 (function kur() {
   const m = location.hash.match(/kur=([A-Za-z0-9_-]{16,})/);
   if (m) { localStorage.setItem('yukleAnahtar', m[1]); history.replaceState(null, '', location.pathname); mesaj('Kurulum tamam ✓'); }
 })();
 
-// ---- ayar alanları
+// ---- ayarlar paneli
+$('ayarAc').onclick = () => { $('panel').hidden = false; };
+$('ayarKapat').onclick = () => { $('panel').hidden = true; };
 $('aIg').value = ayar.ig; $('aYazi1').value = ayar.yazi1; $('aYazi2').value = ayar.yazi2;
-$('rEnerji').value = ayar.enerji; $('aHiz').value = ayar.hiz; $('vEnerji').textContent = ayar.enerji;
+$('rEnerji').value = ayar.enerji; $('aHiz').value = ayar.hiz; $('rParlak').value = ayar.parlak; $('rKontrast').value = ayar.kontrast;
+function etiketler() {
+  $('vEnerji').textContent = ayar.enerji; $('vParlak').textContent = (+ayar.parlak).toFixed(2); $('vKontrast').textContent = (+ayar.kontrast).toFixed(2);
+  $('qrCip').classList.toggle('acik', ayar.qr); $('qrCip').textContent = ayar.qr ? 'QR açık' : 'QR';
+  for (const b of $('oranSeg').children) b.classList.toggle('sec', +b.dataset.oran === +ayar.oran);
+  for (const b of $('yontemSeg').children) b.classList.toggle('sec', b.dataset.y === ayar.yontem);
+}
+etiketler();
 for (const [id, k] of [['aIg', 'ig'], ['aYazi1', 'yazi1'], ['aYazi2', 'yazi2']])
-  $(id).addEventListener('change', () => { ayar[k] = $(id).value.trim().replace(/^@/, ''); ayarKaydet(); ciz(); });
-$('rEnerji').addEventListener('input', () => { ayar.enerji = +$('rEnerji').value; $('vEnerji').textContent = ayar.enerji; ayarKaydet(); });
-$('aHiz').addEventListener('change', () => { ayar.hiz = +$('aHiz').value; ayarKaydet(); });
+  $(id).addEventListener('change', () => { ayar[k] = $(id).value.trim().replace(/^@/, ''); ayarKaydet(); });
+for (const [id, k] of [['rEnerji', 'enerji'], ['rParlak', 'parlak'], ['rKontrast', 'kontrast'], ['aHiz', 'hiz']])
+  $(id).addEventListener('input', () => { ayar[k] = +$(id).value; ayarKaydet(); etiketler(); });
+$('oranSeg').onclick = (e) => { const b = e.target.closest('button'); if (b) { ayar.oran = +b.dataset.oran; ayarKaydet(); etiketler(); } };
+$('yontemSeg').onclick = (e) => { const b = e.target.closest('button'); if (b) { ayar.yontem = b.dataset.y; ayarKaydet(); etiketler(); } };
+$('qrCip').onclick = () => { ayar.qr = !ayar.qr; ayarKaydet(); etiketler(); mesaj(ayar.qr ? 'QR açık: fotoğrafın altına QR basılır' : 'QR kapalı: yalnız fotoğraf'); };
 
-// ---- bağlantı
+// ---- yazıcı
 function bagGoster() {
-  $('bagNokta').classList.toggle('on', yazici.bagli);
-  $('bagAd').textContent = yazici.bagli ? yazici.ad : '';
-  $('bBagla').textContent = yazici.bagli ? 'Bağlı ✓ (yeniden bağlan)' : 'Yazıcıya bağlan';
-  $('ydurum').textContent = yazici.bagli ? (yazici.durumMetni || 'Hazır') : 'Yazıcıyı aç, sonra "bağlan"a dokun.';
+  const b = yazici.bagli;
+  $('bagNokta').classList.toggle('on', b);
+  const pil = yazici.pil, pilYazi = pil == null ? '' : ` · 🔋 %${pil}`;
+  if (baglaniyor && !b) return;
+  $('bagAd').textContent = b ? (yazici.durumMetni || yazici.ad || 'Yazıcı') + pilYazi : 'Yazıcı yok';
+  $('ydurum').textContent = b ? `Bağlı: ${yazici.ad}${pilYazi}${yazici.volt ? ` (${yazici.volt.toFixed(2)} V)` : ''} ${yazici.durumMetni ? '· ' + yazici.durumMetni : ''}`
+    : 'Yazıcı bağlı değil. Açık olduğundan emin ol.';
 }
-async function bagla(secerek = true) {
-  if (!navigator.bluetooth) { mesaj('Bu tarayıcıda Bluetooth yok. Chrome ile aç.'); return false; }
-  try {
-    $('bBagla').disabled = true; $('ydurum').textContent = 'Bağlanıyor…';
-    if (!(secerek ? await yazici.sec() : await yazici.oncekiniBul())) { bagGoster(); return false; }
-    yazici.cihaz.addEventListener('gattserverdisconnected', bagGoster);
-    bagGoster(); return true;
-  } catch (e) {
-    if (e.name !== 'NotFoundError') mesaj('Bağlanamadı: ' + e.message, 6000);
-    bagGoster(); return false;
-  } finally { $('bBagla').disabled = false; }
+yazici.degisti = bagGoster;
+let baglaniyor = null;
+function bagla(yeniTara = false, sessiz = false) {
+  if (baglaniyor) return baglaniyor;
+  $('bagAd').textContent = 'Bağlanıyor…';
+  baglaniyor = (async () => {
+    try {
+      if (yeniTara || !(await yazici.oncekiniBul())) {
+        if (!YAZICI.yerelMi && !yeniTara) return false;   // tarayıcıda seçim penceresi yalnız dokununca
+        await yazici.sec();
+      }
+      return true;
+    } catch (e) {
+      if (!sessiz && e.name !== 'NotFoundError') mesaj('Yazıcı bulunamadı: ' + e.message, 4000);
+      return false;
+    } finally { baglaniyor = null; bagGoster(); }
+  })();
+  return baglaniyor;
 }
+$('yaziciCip').onclick = () => bagla(!yazici.bagli && !YAZICI.yerelMi);
 $('bBagla').onclick = () => bagla(true);
-bagGoster();
-bagla(false);
-setInterval(() => { if (yazici.bagli) $('ydurum').textContent = yazici.durumMetni || 'Hazır'; }, 2000);
+bagGoster(); bagla(false, true).then(b => b && yazici.durumSor());
+setInterval(bagGoster, 2000);
+// pil yoklaması + yazıcı sonradan açılırsa kendiliğinden bağlan (uygulamada; tarayıcıda seçim penceresi gerekir)
+setInterval(() => {
+  if (document.hidden || calisiyor) return;
+  if (yazici.bagli) yazici.durumSor();
+  else if (YAZICI.yerelMi && !baglaniyor) bagla(false, true);
+}, 15000);
 
-async function bitlerleBas(bitler) {
-  if (!yazici.bagli && !(await bagla(false)) && !(await bagla(true))) return false;
-  if (yazici.durum & 1) { mesaj('Kâğıt bitmiş görünüyor.', 6000); }
-  $('ilerleme').hidden = false; $('ilerleme').value = 0;
+async function bitlerleBas(bit) {
+  if (!yazici.bagli && !(await bagla(false)) && !(await bagla(!YAZICI.yerelMi))) { mesaj('Yazıcı bağlı değil'); return false; }
+  if (yazici.durum & 1) mesaj('Kâğıt bitmiş görünüyor', 4000);
+  $('ilerleme').style.width = '0';
   try {
-    await yazici.bas(bitler, { hiz: ayar.hiz, enerji: ayar.enerji, ilerleme: (p) => $('ilerleme').value = p });
+    await yazici.bas(bit, { hiz: ayar.hiz, enerji: ayar.enerji, ilerleme: (p) => $('ilerleme').style.width = (p * 100) + '%' });
     return true;
-  } catch (e) { mesaj('Baskı hatası: ' + e.message, 7000); return false; }
-  finally { setTimeout(() => $('ilerleme').hidden = true, 800); }
+  } catch (e) { mesaj('Baskı hatası: ' + e.message, 5000); return false; }
+  finally { setTimeout(() => $('ilerleme').style.width = '0', 700); }
 }
 
-// ---- fotoğraf
-let kaynak = null, oran = 1.333, yontem = 'atkinson', donus = 0, sonKimlik = null;
-$('bCek').onclick = () => $('dosyaKamera').click();
-$('bGaleri').onclick = () => $('dosyaGaleri').click();
-for (const id of ['dosyaKamera', 'dosyaGaleri']) $(id).addEventListener('change', async (e) => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  kaynak = await createImageBitmap(f, { imageOrientation: 'from-image' });
-  donus = 0; sonKimlik = null; $('duzenKart').hidden = false; ciz();
-  $('duzenKart').scrollIntoView({ behavior: 'smooth' });
-});
-for (const [seg, k] of [['oranSeg', 'oran'], ['yontemSeg', 'y']]) $(seg).addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (!b) return;
-  [...$(seg).children].forEach(x => x.classList.toggle('sec', x === b));
-  if (k === 'oran') oran = +b.dataset.oran; else yontem = b.dataset.y;
-  ciz();
-});
-for (const id of ['rParlak', 'rKontrast', 'rKaydir', 'cQr']) $(id).addEventListener('input', () => ciz());
-$('bDondur').onclick = () => { donus = (donus + 90) % 360; ciz(); };
-
-// döndürülmüş kaynağı tuvale çiz
-function donmusKaynak() {
-  const c = document.createElement('canvas');
-  const yan = donus % 180 !== 0;
-  c.width = yan ? kaynak.height : kaynak.width; c.height = yan ? kaynak.width : kaynak.height;
-  const x = c.getContext('2d');
-  x.translate(c.width / 2, c.height / 2); x.rotate(donus * Math.PI / 180);
-  x.drawImage(kaynak, -kaynak.width / 2, -kaynak.height / 2);
-  return c;
-}
-
-function fotoBitleri() {
-  const src = donmusKaynak();
-  const h = oran ? Math.round(W * oran) : Math.round(W * src.height / src.width);
-  const c = document.createElement('canvas'); c.width = W; c.height = h;
-  const x = c.getContext('2d', { willReadFrequently: true });
-  const hedefOran = h / W, srcOran = src.height / src.width, k = +$('rKaydir').value;
-  let sx = 0, sy = 0, sw = src.width, sh = src.height;
-  if (srcOran > hedefOran) { sh = src.width * hedefOran; sy = (src.height - sh) * k; }
-  else { sw = src.height / hedefOran; sx = (src.width - sw) * k; }
-  x.imageSmoothingQuality = 'high';
-  x.drawImage(src, sx, sy, sw, sh, 0, 0, W, h);
-  const g = YAZICI.griTon(x.getImageData(0, 0, W, h), { parlaklik: +$('rParlak').value, kontrast: +$('rKontrast').value });
-  return { bit: YAZICI.titret(g, W, h, yontem), h, kesit: { src, sx, sy, sw, sh } };
-}
-
-function ciz() {
-  if (!kaynak) return;
-  $('vParlak').textContent = (+$('rParlak').value).toFixed(2);
-  $('vKontrast').textContent = (+$('rKontrast').value).toFixed(2);
-  if (!sonKimlik) sonKimlik = ANI.yeniKimlik();
-  const foto = fotoBitleri();
-  const alt = $('cQr').checked ? ANI.altBilgi(ANI.baglanti(sonKimlik), ayar) : null;
-  const bit = ANI.birlestir([foto.bit, foto.h], alt);
-  ANI.onizle($('onizleme'), bit);
-  ciz.son = { bit, foto };
-}
-
-$('bBas').onclick = async () => {
-  if (!ciz.son) return;
-  $('bBas').disabled = true;
+// ---- kamera
+const video = $('video'), canli = $('canli');
+let akis = null;
+async function kameraAc() {
+  if (akis) akis.getTracks().forEach(t => t.stop());
   try {
-    const { bit, foto } = ciz.son;
-    const kimlik = sonKimlik;
-    if ($('cQr').checked) {
-      // önce kuyruğa al (baskı başarısız olsa bile foto kaybolmaz)
-      const jpeg = await ANI.renkliJpeg(foto.kesit.src, foto.kesit);
-      await ANI.kuyrugaEkle(kimlik, jpeg);
-      kuyrukGoster(); ANI.kuyruguIsle(kuyrukGoster);
+    akis = await navigator.mediaDevices.getUserMedia({ audio: false, video: {
+      facingMode: ayar.arka ? 'environment' : 'user', width: { ideal: 1920 }, height: { ideal: 1440 } } });
+    video.srcObject = akis; await video.play();
+  } catch (e) { durumYaz('Kamera açılamadı: ' + e.message); }
+}
+$('bCevir').onclick = () => { ayar.arka = !ayar.arka; ayarKaydet(); kameraAc(); };
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { akis && akis.getTracks().forEach(t => t.stop()); akis = null; } else kameraAc();
+});
+
+// kaynağı orana göre kırpıp 384 genişlikte 1 bit'e çevir
+function kirp(kaynak, sw0, sh0) {
+  const h = Math.round(W * ayar.oran), hedef = h / W;
+  let sx = 0, sy = 0, sw = sw0, sh = sh0;
+  if (sh0 / sw0 > hedef) { sh = sw0 * hedef; sy = (sh0 - sh) / 2; } else { sw = sh0 / hedef; sx = (sw0 - sw) / 2; }
+  return { h, sx, sy, sw, sh };
+}
+const isTuval = document.createElement('canvas');
+const isCtx = isTuval.getContext('2d', { willReadFrequently: true });
+function bitle(kaynak, sw0, sh0) {
+  const k = kirp(kaynak, sw0, sh0);
+  isTuval.width = W; isTuval.height = k.h;
+  isCtx.imageSmoothingQuality = 'high';
+  isCtx.drawImage(kaynak, k.sx, k.sy, k.sw, k.sh, 0, 0, W, k.h);
+  const g = YAZICI.griTon(isCtx.getImageData(0, 0, W, k.h), { parlaklik: +ayar.parlak, kontrast: +ayar.kontrast });
+  return { bit: YAZICI.titret(g, W, k.h, ayar.yontem), h: k.h, kesit: k };
+}
+
+let donmus = false, sonCizim = 0;
+function dongu(t) {
+  requestAnimationFrame(dongu);
+  if (donmus || !video.videoWidth || t - sonCizim < 90 || !$('panel').hidden) return;
+  sonCizim = t;
+  const f = bitle(video, video.videoWidth, video.videoHeight);
+  ANI.onizle(canli, f.bit);
+}
+requestAnimationFrame(dongu);
+
+let calisiyor = false;
+async function cekVeBas(kaynak, sw0, sh0) {
+  if (calisiyor) return; calisiyor = true; donmus = true;
+  $('deklansor').classList.add('calisiyor');
+  $('flas').classList.add('on'); setTimeout(() => $('flas').classList.remove('on'), 60);
+  try {
+    const foto = bitle(kaynak, sw0, sh0);
+    let alt = null;
+    if (ayar.qr) {
+      const kimlik = ANI.yeniKimlik();
+      alt = ANI.altBilgi(ANI.baglanti(kimlik), ayar);
+      const c = document.createElement('canvas'); c.width = sw0; c.height = sh0; c.getContext('2d').drawImage(kaynak, 0, 0, sw0, sh0);
+      ANI.renkliJpeg(c, foto.kesit).then(j => ANI.kuyrugaEkle(kimlik, j)).then(() => { kuyrukGoster(); ANI.kuyruguIsle(kuyrukGoster); })
+        .catch(e => mesaj('Yükleme kuyruğu: ' + e.message));
     }
-    if (await bitlerleBas(bit)) {
-      mesaj('Basıldı ✓');
-      sonKimlik = null; ciz();             // sonraki baskı yeni bağlantı alır
-    }
-  } catch (e) { mesaj('Hata: ' + e.message, 7000); }
-  finally { $('bBas').disabled = false; }
-};
+    const bit = ANI.birlestir([foto.bit, foto.h], alt);
+    ANI.onizle(canli, bit);
+    durumYaz('Basılıyor…');
+    if (await bitlerleBas(bit)) durumYaz('Basıldı ✓');
+  } catch (e) { mesaj('Hata: ' + e.message, 5000); }
+  finally {
+    calisiyor = false; $('deklansor').classList.remove('calisiyor');
+    setTimeout(() => { donmus = false; durumYaz(''); }, 900);
+  }
+}
+$('deklansor').onclick = () => { if (video.videoWidth) cekVeBas(video, video.videoWidth, video.videoHeight); };
+$('bGaleri').onclick = () => $('dosyaGaleri').click();
+$('dosyaGaleri').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const b = await createImageBitmap(f, { imageOrientation: 'from-image' });
+  cekVeBas(b, b.width, b.height);
+});
+// ses kısma tuşu da deklanşör (yerel köprü gönderir)
+window.DEKLANSOR = () => $('deklansor').click();
 
 $('bTest').onclick = async () => {
   $('bTest').disabled = true;
-  try {
-    const bit = ANI.testFisi(ayar);
-    if (await bitlerleBas(bit)) mesaj('Test baskısı gönderildi ✓');
-  } finally { $('bTest').disabled = false; }
+  try { if (await bitlerleBas(ANI.testFisi(ayar))) mesaj('Test baskısı gönderildi ✓'); }
+  finally { $('bTest').disabled = false; }
 };
 
-// ---- kuyruk
+// ---- yükleme kuyruğu (yalnız QR açıkken dolar)
 async function kuyrukGoster() {
   const l = await ANI.kuyrukListe();
   const bekleyen = l.filter(x => !x.yuklendi).length;
@@ -268,8 +312,9 @@ kuyrukGoster(); ANI.kuyruguIsle(kuyrukGoster);
 setInterval(() => ANI.kuyruguIsle(kuyrukGoster), 30000);
 addEventListener('online', () => ANI.kuyruguIsle(kuyrukGoster));
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-$('surum').textContent = 'Sürüm ' + ANI.SURUM;
+kameraAc();
+if (!YAZICI.yerelMi && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+$('surum').textContent = 'Sürüm ' + ANI.SURUM + (YAZICI.yerelMi ? ' · uygulama' : ' · tarayıcı');
 </script>
 </body>
 </html>
