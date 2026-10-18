@@ -92,7 +92,11 @@
     <input id="rParlak" type="range" min="-0.4" max="0.4" step="0.02">
     <label>Kontrast <span id="vKontrast"></span></label>
     <input id="rKontrast" type="range" min="0.6" max="2" step="0.05">
-    <label>Görünüm</label>
+    <label>Önizleme</label>
+    <div class="seg" id="onizSeg">
+      <button data-o="gri">Siyah-beyaz</button><button data-o="renkli">Renkli</button><button data-o="baski">Baskı gibi (noktalı)</button>
+    </div>
+    <label>Baskı dokusu</label>
     <div class="seg" id="yontemSeg">
       <button data-y="atkinson">Yumuşak</button><button data-y="floyd">Detaylı</button><button data-y="esik">Siyah-beyaz</button>
     </div>
@@ -127,7 +131,7 @@ const W = YAZICI.GENISLIK;
 const yazici = new YAZICI.Yazici();
 const ayar = Object.assign({
   ig: '', yazi1: 'Bu anın dijital hali', yazi2: 'QR\'ı okut, indir', enerji: 24000, hiz: 32,
-  oran: 1.333, parlak: 0.06, kontrast: 1.2, yontem: 'atkinson', qr: false, arka: true,
+  oran: 1.333, parlak: 0.06, kontrast: 1.2, yontem: 'atkinson', qr: false, arka: true, onizleme: 'gri',
 }, JSON.parse(localStorage.getItem('ayar') || '{}'));
 const ayarKaydet = () => localStorage.setItem('ayar', JSON.stringify(ayar));
 
@@ -153,6 +157,7 @@ function etiketler() {
   $('qrCip').classList.toggle('acik', ayar.qr); $('qrCip').textContent = ayar.qr ? 'QR açık' : 'QR';
   for (const b of $('oranSeg').children) b.classList.toggle('sec', +b.dataset.oran === +ayar.oran);
   for (const b of $('yontemSeg').children) b.classList.toggle('sec', b.dataset.y === ayar.yontem);
+  for (const b of $('onizSeg').children) b.classList.toggle('sec', b.dataset.o === ayar.onizleme);
 }
 etiketler();
 for (const [id, k] of [['aIg', 'ig'], ['aYazi1', 'yazi1'], ['aYazi2', 'yazi2']])
@@ -161,6 +166,7 @@ for (const [id, k] of [['rEnerji', 'enerji'], ['rParlak', 'parlak'], ['rKontrast
   $(id).addEventListener('input', () => { ayar[k] = +$(id).value; ayarKaydet(); etiketler(); });
 $('oranSeg').onclick = (e) => { const b = e.target.closest('button'); if (b) { ayar.oran = +b.dataset.oran; ayarKaydet(); etiketler(); } };
 $('yontemSeg').onclick = (e) => { const b = e.target.closest('button'); if (b) { ayar.yontem = b.dataset.y; ayarKaydet(); etiketler(); } };
+$('onizSeg').onclick = (e) => { const b = e.target.closest('button'); if (b) { ayar.onizleme = b.dataset.o; ayarKaydet(); etiketler(); } };
 $('qrCip').onclick = () => { ayar.qr = !ayar.qr; ayarKaydet(); etiketler(); mesaj(ayar.qr ? 'QR açık: fotoğrafın altına QR basılır' : 'QR kapalı: yalnız fotoğraf'); };
 
 // ---- yazıcı
@@ -253,8 +259,17 @@ function dongu(t) {
   requestAnimationFrame(dongu);
   if (donmus || !video.videoWidth || t - sonCizim < 90 || !$('panel').hidden) return;
   sonCizim = t;
-  const f = bitle(video, video.videoWidth, video.videoHeight);
-  ANI.onizle(canli, f.bit);
+  if (ayar.onizleme === 'baski') {
+    canli.style.filter = '';
+    ANI.onizle(canli, bitle(video, video.videoWidth, video.videoHeight).bit);
+    return;
+  }
+  // sade önizleme: kırpılmış görüntü, siyah-beyaz ya da renkli (parlaklık/kontrast ayarı yansır)
+  const k = kirp(video, video.videoWidth, video.videoHeight), gw = 720, gh = Math.round(gw * ayar.oran);
+  if (canli.width !== gw || canli.height !== gh) { canli.width = gw; canli.height = gh; }
+  canli.getContext('2d').drawImage(video, k.sx, k.sy, k.sw, k.sh, 0, 0, gw, gh);
+  canli.style.filter = (ayar.onizleme === 'gri' ? 'grayscale(1) ' : '') +
+    `brightness(${(1 + +ayar.parlak).toFixed(2)}) contrast(${(+ayar.kontrast).toFixed(2)})`;
 }
 requestAnimationFrame(dongu);
 
@@ -265,7 +280,7 @@ async function cekVeBas(kaynak, sw0, sh0) {
   $('flas').classList.add('on'); setTimeout(() => $('flas').classList.remove('on'), 60);
   try {
     const foto = bitle(kaynak, sw0, sh0);
-    let alt = null;
+    let alt = ANI.altBilgi(null, ayar);            // QR kapalı: yalnız tarih-saat satırı
     if (ayar.qr) {
       const kimlik = ANI.yeniKimlik();
       alt = ANI.altBilgi(ANI.baglanti(kimlik), ayar);
@@ -274,7 +289,7 @@ async function cekVeBas(kaynak, sw0, sh0) {
         .catch(e => mesaj('Yükleme kuyruğu: ' + e.message));
     }
     const bit = ANI.birlestir([foto.bit, foto.h], alt);
-    ANI.onizle(canli, bit);
+    if (ayar.onizleme === 'baski') { canli.style.filter = ''; ANI.onizle(canli, bit); }
     durumYaz('Basılıyor…');
     if (await bitlerleBas(bit)) durumYaz('Basıldı ✓');
   } catch (e) { mesaj('Hata: ' + e.message, 5000); }
