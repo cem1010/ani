@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f6f1e9">
+<link rel="icon" href="ikon.svg">
+<title>Anı</title>
+<style>
+  :root { --bg:#f6f1e9; --kart:#fffdf8; --yazi:#1d1b18; --soluk:#7a746b; --vurgu:#1d1b18; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--yazi); font:16px/1.5 system-ui,-apple-system,Roboto,sans-serif; display:flex; justify-content:center; }
+  main { width:100%; max-width:520px; padding:20px 16px 40px; }
+  .polaroid { background:var(--kart); padding:12px 12px 18px; border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,.12); transform:rotate(-0.6deg); }
+  .polaroid img { width:100%; display:block; border-radius:2px; background:#ddd; min-height:200px; object-fit:cover; }
+  .alt { display:flex; justify-content:space-between; color:var(--soluk); font-size:14px; margin-top:10px; padding:0 2px; }
+  .butonlar { display:flex; gap:10px; margin-top:22px; }
+  .btn { flex:1; display:inline-flex; justify-content:center; align-items:center; gap:8px; padding:14px; border-radius:12px; font:600 16px system-ui; text-decoration:none; border:0; cursor:pointer; }
+  .koyu { background:var(--vurgu); color:#fff; }
+  .acik { background:#fff; color:var(--yazi); border:1px solid #e3ddd2; }
+  .foto-kart { margin-top:26px; background:#fff; border-radius:14px; padding:16px; border:1px solid #ece6db; }
+  .foto-kart h2 { font-size:15px; margin:0 0 4px; color:var(--soluk); font-weight:500; }
+  .foto-kart .ad { font-size:18px; font-weight:700; }
+  .kucuk { font-size:13px; color:var(--soluk); margin-top:24px; text-align:center; }
+  #bekle { text-align:center; padding:60px 10px; color:var(--soluk); }
+  .donen { width:28px; height:28px; border:3px solid #ddd; border-top-color:#888; border-radius:50%; margin:0 auto 14px; animation:d 1s linear infinite; }
+  @keyframes d { to { transform:rotate(360deg); } }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div id="bekle"><div class="donen"></div><div id="bekleYazi">Fotoğrafın açılıyor…</div></div>
+
+  <section id="foto" hidden>
+    <div class="polaroid">
+      <img id="resim" alt="Anı fotoğrafı">
+      <div class="alt"><span id="tarih"></span><span>anı</span></div>
+    </div>
+    <div class="butonlar">
+      <a id="indir" class="btn koyu" download>⬇️ İndir</a>
+      <button id="paylas" class="btn acik" hidden>↗️ Paylaş</button>
+    </div>
+  </section>
+
+  <section id="karsilama" hidden>
+    <div class="polaroid" style="text-align:center;padding:40px 20px">
+      <div style="font-size:42px">📷</div>
+      <p style="font-size:18px;margin:8px 0 0">Anı fotoğrafları</p>
+      <p style="color:var(--soluk);margin:6px 0 0">Basılı fotoğrafının altındaki QR'ı okut, dijital hali burada açılır.</p>
+    </div>
+  </section>
+
+  <section id="fotografci" class="foto-kart" hidden>
+    <h2>📷 Fotoğraf</h2>
+    <div class="ad" id="fAd">Cem</div>
+    <div class="butonlar" style="margin-top:12px">
+      <a id="takip" class="btn koyu" target="_blank" rel="noopener" hidden>Instagram'da takip et</a>
+      <a id="mesajAt" class="btn acik" target="_blank" rel="noopener" hidden>Mesaj at</a>
+    </div>
+  </section>
+
+  <p class="kucuk" id="gizlilik">Bu fotoğraf şifreli saklanır; açan bağlantı yalnız sende.<br>Silinmesini istersen fotoğrafçıya yazman yeterli.</p>
+</main>
+
+<script src="lib/ani.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+(async function () {
+  // fotoğrafçı kartı (ayar.json; boşsa gizli)
+  fetch('ayar.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).then(a => {
+    if (a.ad) $('fAd').textContent = a.ad;
+    if (a.ig) {
+      $('takip').href = 'https://instagram.com/' + a.ig; $('takip').hidden = false;
+      $('mesajAt').href = 'https://ig.me/m/' + a.ig; $('mesajAt').hidden = false;
+    }
+    if (a.ig || a.ad) $('fotografci').hidden = false;
+  }).catch(() => {});
+
+  const k = ANI.baglantiCoz(location.hash);
+  if (!k) { $('bekle').hidden = true; $('karsilama').hidden = false; return; }
+
+  const adresler = [`p/${k.id}.bin`, `https://raw.githubusercontent.com/${ANI.DEPO}/main/p/${k.id}.bin`];
+  let deneme = 0;
+  while (true) {
+    for (const a of adresler) {
+      try {
+        const r = await fetch(a + (deneme ? `?t=${Date.now()}` : ''), { cache: deneme ? 'no-store' : 'default' });
+        if (!r.ok) continue;
+        const { meta, jpeg } = await ANI.coz(k.anahtar, await r.arrayBuffer());
+        const url = URL.createObjectURL(jpeg), d = new Date(meta.t);
+        $('resim').src = url;
+        $('tarih').textContent = ANI.tarihMetni(d);
+        $('indir').href = url;
+        $('indir').download = `ani-${d.toISOString().slice(0, 10)}.jpg`;
+        const dosya = new File([jpeg], $('indir').download, { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [dosya] })) {
+          $('paylas').hidden = false;
+          $('paylas').onclick = () => navigator.share({ files: [dosya] }).catch(() => {});
+        }
+        $('bekle').hidden = true; $('foto').hidden = false;
+        return;
+      } catch (e) {
+        if (e.name === 'OperationError') { $('bekleYazi').textContent = 'Bu bağlantı bozuk görünüyor. QR\'ı tekrar okut.'; return; }
+      }
+    }
+    deneme++;
+    $('bekleYazi').textContent = deneme < 3 ? 'Fotoğrafın yükleniyor, birazdan burada…'
+      : 'Fotoğraf henüz yüklenmedi. Sayfa açık kalsın, gelince kendiliğinden görünecek (ya da biraz sonra QR\'ı tekrar okut).';
+    await new Promise(r => setTimeout(r, Math.min(60000, 8000 * deneme)));
+  }
+})();
+</script>
+</body>
+</html>
